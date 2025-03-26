@@ -180,43 +180,29 @@ impl SReachTraceOracle {
         // println!("Correcting left-neighbours counts");
         // println!("Right traces {traces:?}");        
 
-        // Add neighbourhoods induced by vertices to the left 
-        let mut left_neighbours: VertexSet = VertexSet::default();
-        for u in inner.iter() {
-            left_neighbours.extend(graph.left_neighbours_slice(u).into_iter());
-            left_neighbours.insert(*u);
-        }
-
-        // println!(" -- Collected {} left neighbours", left_neighbours.len());
-
-        for y in left_neighbours.into_iter() {
-            let mut trace = vec![];
-            
-            // `trace` will inherit the ordering of `inner`
-            let mut trace_prefix = vec![];
-            for u in inner.iter() {
-                if graph.adjacent(u, &y) {
-                    trace.push(*u); 
-                    if graph.adjacent_ordered(u, &y) {
-                        trace_prefix.push(*u);
-                    }
-                }
-            }
-
-            // Only count trace if the source vertices lies outside of `inner`
-            if !inner.contains(&y) {
-                match traces.get_mut(&trace) {
-                    Some(trace_counter) => *trace_counter += 1,
-                    None => {traces.insert(trace.clone(), 1);},
-                }
-            }
-
-            // Correct count for prefix. This key must exist in `traces`
-            unsafe {
-                *traces.get_mut(&trace_prefix).unwrap_unchecked() -= 1;    
+        // TODO: We could implement the traces as bitmaps here...
+        let inner_set:VertexSet = inner.iter().cloned().collect();
+        let mut trace_map:VertexMap<Vec<u32>>  = VertexMap::default();
+        for x in inner {
+            for y in graph.left_neighbours_slice(x).into_iter().chain(std::iter::once(x)) {
+                let mut trace = if let Some(trace) = trace_map.remove(y) {
+                    trace
+                } else {
+                    let trace = graph.left_neighbours_slice(y).into_iter().filter(|z| inner_set.contains(z)).cloned().collect_vec();
+                    *traces.get_mut(&trace).unwrap() -= 1; // Remove from old trace count
+                    trace
+                };
+                trace.push(*x);
+                trace_map.insert(*y, trace);
             }
         }
-        // println!("Final traces {traces:?}");
+
+        for (y, trace) in trace_map.into_iter() {
+            if inner_set.contains(&y) {
+                continue;
+            }
+            *traces.entry(trace).or_default() += 1; // Add to correct trace
+        }
 
         traces
     }
