@@ -225,16 +225,17 @@ impl SReachTraceOracle {
 
         // Add neighbourhoods induced by vertices to the left 
         let mut left_neighbours: VertexSet = VertexSet::default();
+        let inner_set: VertexSet = inner.iter().cloned().collect();
         for u in inner.iter() {
             left_neighbours.extend(graph.left_neighbours_slice(u).into_iter());
             left_neighbours.insert(*u);
         }
 
         'outer: for u in left_neighbours.into_iter() {
-            let is_inner = inner.contains(&u);
+            let is_inner = inner_set.contains(&u);
 
             for w in graph.left_neighbours_slice(&u) {
-                if inner.contains(w) {
+                if inner_set.contains(w) {
                     // The vertex u has been counted already in the first phase. If this 
                     // vertex is in `inner`, we need to correct that.
                     if is_inner {
