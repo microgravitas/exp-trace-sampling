@@ -102,9 +102,14 @@ fn main() -> Result<(), &'static str> {
     let num_queries = args.number;
 
     let large_deg_set = (query_size*10) as usize;
+
+    // Only take large degree vertices
     let elements: Vec<u32> = graph.degrees().into_iter()
             .sorted_by_key(|(_,deg)| u32::MAX - deg)
             .map(|(u,_)| u).take(large_deg_set).collect_vec();
+
+    // Take all vertices
+    let elements: Vec<u32> = graph.vertices().cloned().collect();
     println!("Running {num_queries} queries of size {query_size} ({:?}) in large-degree set of size {}", args.size, elements.len());
 
     let rng = if let Some(seed) = args.seed {
