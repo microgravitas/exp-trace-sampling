@@ -1,0 +1,12 @@
+[package]
+name = "exp-trace-sampling"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bitvec = "1.0.1"
+clap = { version = "4.5.32", features = ["derive"] }
+fxhash = "0.2.1"
+graphbench = { git = "https://github.com/microgravitas/graphbench", version = "0.1.81" }
+itertools = "0.14.0"
+rand = "0.9.0"
