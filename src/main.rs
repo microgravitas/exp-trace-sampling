@@ -1,11 +1,15 @@
+#![allow(unused_variables)]
+#![allow(unused_imports)]
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
 mod sreach;
 
+use std::time::Instant;
+
 use itertools::Itertools;
 use sreach::SReachTraceOracle;
-use clap::{Parser, ValueEnum};
+use clap::{ArgAction, Parser, ValueEnum};
 use fxhash::{FxHashMap, FxHashSet};
 use graphbench::algorithms::LinearGraphAlgorithms;
 use graphbench::degengraph::DegenGraph;
@@ -36,6 +40,10 @@ struct Args {
     // Random seed
     #[clap(short,long)]
     seed:Option<u64>,
+
+    // Large-degree vertices only
+    #[clap(long, short, action)]
+    bias:bool
 }
 
 #[derive(Clone, Debug, ValueEnum)]
@@ -101,16 +109,23 @@ fn main() -> Result<(), &'static str> {
     };
     let num_queries = args.number;
 
-    let large_deg_set = (query_size*10) as usize;
-
     // Only take large degree vertices
-    let elements: Vec<u32> = graph.degrees().into_iter()
+    let elements: Vec<u32> = if args.bias {
+        let large_deg_set = (query_size*10) as usize;
+        graph.degrees().into_iter()
             .sorted_by_key(|(_,deg)| u32::MAX - deg)
-            .map(|(u,_)| u).take(large_deg_set).collect_vec();
+            .map(|(u,_)| u).take(large_deg_set).collect_vec()
+    } else {
+        graph.vertices().cloned().collect_vec()
+    };
 
     // Take all vertices
     let elements: Vec<u32> = graph.vertices().cloned().collect();
-    println!("Running {num_queries} queries of size {query_size} ({:?}) in large-degree set of size {}", args.size, elements.len());
+    if args.bias {
+        println!("Running {num_queries} queries of size {query_size} ({:?}) on large-degree set of size {}", args.size, elements.len());
+    } else {
+        println!("Running {num_queries} queries of size {query_size} ({:?}) on all vertices", args.size);
+    }
 
     let rng = if let Some(seed) = args.seed {
         StdRng::seed_from_u64(seed)
@@ -119,7 +134,9 @@ fn main() -> Result<(), &'static str> {
     };
 
     let query_iter = RandomSetIter::new(elements, rng, query_size).take(num_queries);
-    
+
+
+    let now = Instant::now();
     let total = match (args.method, args.query) {
         (QueryMethod::Basic, QueryType::Trace) => trace_basic(&graph, query_iter),
         (QueryMethod::Basic, QueryType::TraceCount) => trace_count_basic(&graph, query_iter),
@@ -129,6 +146,7 @@ fn main() -> Result<(), &'static str> {
         (QueryMethod::SReach2, QueryType::Neighbours) => neighbours_sreach(&graph, query_iter),
     };
 
+    println!("Total query time {:.2?}", now.elapsed().as_secs_f32());
     println!("Debug counter value is {total}");
 
     Ok(())
