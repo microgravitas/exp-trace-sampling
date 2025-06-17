@@ -11,8 +11,12 @@ type VertexBitVec = BitVec<u64,Lsb0>;
 
 #[derive(Debug)]
 struct SReachContext {
+    // Set of 2-strongly reachable vertices
     context:Vec<Vertex>,
     indices:VertexMap<usize>,
+    
+    // Contains the neighbours that appear to the right of the vertex 
+    // represented by this context which share left neighbours
     right_neighbours:FxHashMap<VertexBitVec, usize>
 }
 
@@ -322,8 +326,7 @@ mod  tests {
 
         let mut order = vec![1,2,3,4,5,6,7,8,9,10,11];
 
-        use rand::thread_rng;
-        order.shuffle(&mut thread_rng());
+        order.shuffle(&mut rand::rng());
 
         let degen = DegenGraph::with_ordering(&graph, order);
         let sreach_oracle = SReachTraceOracle::for_graph(&degen);

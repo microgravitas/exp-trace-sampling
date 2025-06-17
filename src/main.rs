@@ -119,8 +119,6 @@ fn main() -> Result<(), &'static str> {
         graph.vertices().cloned().collect_vec()
     };
 
-    // Take all vertices
-    let elements: Vec<u32> = graph.vertices().cloned().collect();
     if args.bias {
         println!("Running {num_queries} queries of size {query_size} ({:?}) on large-degree set of size {}", args.size, elements.len());
     } else {
