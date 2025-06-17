@@ -57,16 +57,17 @@ impl SReachContext {
     /// Aggregates counts for all sets in this storage that intersect the `target` set in
     /// exactly the rightmost element in the context (e.g. the 'anchor' vertex for this struct)
     fn count_first_intersection(&self, target:&[Vertex]) -> usize {
-        let mask = self.to_bitset(target);    
+        let mask = self.to_bitset(target).clone();    
         let anchor_mask = self.singleton_bitset(&self.context[self.context.len()-1]);
 
         let mut res:usize = 0;
 
         for (bits, count) in self.right_neighbours.iter() {
             let bits = mask.clone() & bits;
-            if bits == anchor_mask {
-                res += count;
-            }
+            // if bits == anchor_mask {
+            //     res += count;
+            // }
+            res += count * (bits == anchor_mask) as usize; // Branchless variant
         }
         res
     }    
